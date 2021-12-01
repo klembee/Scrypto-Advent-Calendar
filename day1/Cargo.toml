@@ -4,11 +4,11 @@ version = "0.1.0"
 edition = "2018"
 
 [dependencies]
-sbor = { path = "/Users/cbisaillon/Documents/Radix/radixdlt-scrypto/sbor" }
-scrypto = { path = "/Users/cbisaillon/Documents/Radix/radixdlt-scrypto/scrypto" }
+sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto/" }
+scrypto = { git = "https://github.com/radixdlt/radixdlt-scrypto/" }
 
 [dev-dependencies]
-radix-engine = { path = "/Users/cbisaillon/Documents/Radix/radixdlt-scrypto/radix-engine" }
+radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto/" }
 
 [profile.release]
 opt-level = 's'     # Optimize for size.

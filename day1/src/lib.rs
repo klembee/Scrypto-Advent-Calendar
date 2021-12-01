@@ -1,35 +1,50 @@
 use scrypto::prelude::*;
 
+/*
+ * PresentFactory.
+ * Component allowing users to create new tokens representing presents.
+ */ 
 blueprint! {
-    struct Hello {
-        // Define what resources and data will be managed by Hello components
-        sample_vault: Vault
+    struct PresentFactory {
+        // A vault can only hold one type of token.
+        // I use a Hashmap mapping present names to vaults containing the presents.
+        presents: HashMap<String, Vault>
     }
 
-    impl Hello {
-        // Implement the functions and methods which will manage those resources and data
-        
-        // This is a function, and can be called directly on the blueprint once deployed
+    impl PresentFactory {
         pub fn new() -> Component {
-            // Create a new token called "HelloToken," with a fixed supply of 1000, and put that supply into a bucket
-            let my_bucket: Bucket = ResourceBuilder::new()
-                .metadata("name", "HelloToken")
-                .metadata("symbol", "HT")
-                .new_token_fixed(1000);
-
-            // Instantiate a Hello component, populating its vault with our supply of 1000 HelloToken
             Self {
-                sample_vault: Vault::with_bucket(my_bucket)
+                // Initiate the HashMap as empty
+                presents: HashMap::new()
             }
             .instantiate()
         }
 
-        // This is a method, because it needs a reference to self.  Methods can only be called on components
-        pub fn free_token(&mut self) -> Bucket {
-            info!("My balance is: {} HelloToken. Now giving away a token!", self.sample_vault.amount());
-            // If the semi-colon is omitted on the last line, the last value seen is automatically returned
-            // In this case, a bucket containing 1 HelloToken is returned
-            self.sample_vault.take(1)
+        /*
+         * Allow caller to create a new present with specified name and quantity
+         */
+        pub fn create_present(&mut self, name: String, quantity: u64) {
+            assert!(!self.presents.contains_key(&name), "Present already exist !");
+
+            // Create the present token
+            let bucket = ResourceBuilder::new()
+                .metadata("name", &name)
+                .new_token_fixed(quantity);
+
+            // Store inside the present list
+            self.presents.insert(name, Vault::with_bucket(bucket));
+        }
+
+        /*
+         * Used to display the list of presents
+         */
+        pub fn list_presents(&self) {
+            info!("{} presents", self.presents.len());
+            info!("==========");
+
+            for (name, vault) in &self.presents {
+                info!("{} {}", vault.amount(), name);
+            }
         }
     }
 }
