@@ -18,3 +18,4 @@ Today, we are building a House component containing a single `enter` method. I a
 9. Call the `enter` method as account 2: `resim call-method [component_address] enter 1,[owner_badge_address]`
 10. Make account 3 the default user: `resim set-default-account [account3_address] [account_3_pubkey]` 
 11. Try to call the `enter` by providing XRD as badge: `resim call-method [component_address] enter 1,030000000000000000000000000000000000000000000000000004`. You should get an error !
+12. Try again but use santa's badge address. `resim call-method [component-address] enter 0,[santa_badge_address]`. As you will see, dressing up like santa by using the santa_badge_address is not good enough, You need the actual badge!

@@ -10,5 +10,5 @@ Today, we will build a SantaCookieEater component. This component consists of a 
 The last command returns two addresses. The address of the created "Cookie" tokens and the address of the component. Remember those, we will need them in the next steps
 
 4. Try to send XRD to the component: `resim call-method [component_address] give_food 500,030000000000000000000000000000000000000000000000000004`. You should get an error message stating that this component only wants "Cookie" tokens
-5. Try to send "YOU" tokens: `resim call-method [component_address] give_token 500,[cookie_address]`
+5. Try to send "Cookie" tokens: `resim call-method [component_address] give_token 500,[cookie_address]`
 6. You should get a "Thank you !" message
