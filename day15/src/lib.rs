@@ -1,2 +1,2 @@
-mod vacine_passport;
+mod vaccine_passport;
 mod christmas_party;
