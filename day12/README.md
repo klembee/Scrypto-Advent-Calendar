@@ -10,9 +10,9 @@ Today, we are going to build a component allowing a group a people to play [Yank
 ### Create the gifts:
 1. `resim new-token-fixed --name book 1`
 1. `resim new-token-fixed --name mug 1`
-1. Send the mug to account2: `resim transfer 1 [mug_address] [account2_address]`
+1. Send the mug to account2: `resim transfer 1,[mug_address] [account2_address]`
 1. `resim new-token-fixed --name giftcard 1`
-1. Send the giftcard to account3: `resim transfer 1 [giftcard_address] [account3_address]`
+1. Send the giftcard to account3: `resim transfer 1,[giftcard_address] [account3_address]`
 
 1. Enter the game as account1: `resim call-method [component_address] enter_swap 1,[book_address]`. Note the returned BucketRef somewhere. This is the participant's badge
 1. Set account2 as default: `resim set-default-account [account2_address] [account2_pub_key]`
@@ -37,6 +37,6 @@ Today, we are going to build a component allowing a group a people to play [Yank
 1. Withdraw the gift of account 3: `resim call-method [component_address] withdraw 1,[participant3_address]`
 1. Set account2 as default: `resim set-default-account [account2_address] [account2_pub_key]`
 1. Withdraw the gift of account 2: `resim call-method [component_address] withdraw 1,[participant2_address]`
-1. Set account1 as default: `resim set-default-account [account2_address] [account2_pub_key]`
+1. Set account1 as default: `resim set-default-account [account1_address] [account1_pub_key]`
 1. Withdraw the gift of account 1: `resim call-method [component_address] withdraw 1,[participant1_address]`
 1. You should now see the three gifts in the resources of the accounts: `resim show [account_address]`

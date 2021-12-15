@@ -24,9 +24,9 @@ blueprint! {
     impl YankeeSwap {
         pub fn new() -> (Component, Bucket) {
             // Create the admin badge
-            let admin_badge = ResourceBuilder::new()
+            let admin_badge = ResourceBuilder::new_fungible(DIVISIBILITY_NONE)
                                 .metadata("name", "Admin")
-                                .new_badge_fixed(1);
+                                .initial_supply_fungible(1);
 
             let component = Self {
                 random_seed: Self::generate_seed(),
@@ -71,9 +71,9 @@ blueprint! {
 
             // Create a new badge that will allow us to
             // identify the users
-            let ticket = ResourceBuilder::new()
+            let ticket = ResourceBuilder::new_fungible(DIVISIBILITY_NONE)
                             .metadata("name", "YankeeSwap Ticket")
-                            .new_badge_fixed(1);
+                            .initial_supply_fungible(1);
 
             
             self.gift_participant.insert(self.gifts.len() as u32, None);
@@ -180,10 +180,10 @@ blueprint! {
         }
 
         // Generate a random number
+        // WARNING: DON'T USE THIS IN PRODUCTION !
         pub fn random_number(&mut self, min: i32, max: i32) -> usize {
             let mut random_number: Decimal = (self.random_seed * (self.nonce as i32)).into();
-            random_number = random_number.abs() / i32::MAX;
-            random_number *= (max - min) + min;
+            random_number = (random_number.abs() / i32::MAX) * (max - min) + min;
 
             self.nonce += 1;
             random_number.to_string().split(".").collect::<Vec<&str>>().get(0).unwrap().parse().unwrap()

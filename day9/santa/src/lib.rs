@@ -9,7 +9,7 @@ use scrypto::prelude::*;
 import! {
     r#"
     {
-        "package": "change_me",
+        "package": "01bfe0f41f7e8ff54cc942b4dbfee48349563517a765579b8e4ae8",
         "name": "PresentList",
         "functions": [
           {
@@ -133,9 +133,9 @@ blueprint! {
 
                 // Create the tokens that will act as gifts
                 for gift in gifts {
-                    let resource = ResourceBuilder::new()
+                    let resource = ResourceBuilder::new_fungible(DIVISIBILITY_NONE)
                                     .metadata("name", format!("{}", gift))
-                                    .new_token_fixed(1);
+                                    .initial_supply_fungible(1);
                     vaults.push(Vault::with_bucket(resource));
                 }
             }

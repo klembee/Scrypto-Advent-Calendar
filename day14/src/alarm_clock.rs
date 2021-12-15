@@ -28,7 +28,7 @@ blueprint! {
             let time_oracle: TimeOracle = time_oracle_component.into();
 
             // Set the time to 2021-12-24 00:00:00
-            time_oracle.set_current_time(1640322000, admin_badge.borrow());
+            time_oracle.set_current_time(1640322000, admin_badge.present());
 
             let component = Self{
                 time_oracle: time_oracle.into(),

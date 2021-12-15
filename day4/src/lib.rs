@@ -12,14 +12,14 @@ blueprint! {
             // Create a new santa badge
             // new_badge_fixed returns a bucket containing the
             // generated badge.
-            let santa_badge = ResourceBuilder::new()
+            let santa_badge = ResourceBuilder::new_fungible(DIVISIBILITY_NONE)
                 .metadata("name", "Santa's Badge")
-                .new_badge_fixed(1);
+                .initial_supply_fungible(1);
             
             // Create a new owner badge
-            let owner_badge = ResourceBuilder::new()
+            let owner_badge = ResourceBuilder::new_fungible(DIVISIBILITY_NONE)
                 .metadata("name", "Owner's Badge")
-                .new_badge_fixed(1);
+                .initial_supply_fungible(1);
 
             // Store both badge's resource_def in the component's state.
             // We will need them for authentification

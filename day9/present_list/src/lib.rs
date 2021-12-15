@@ -20,9 +20,9 @@ blueprint! {
         // presents associated with it.
         pub fn start_new_list(&mut self) -> Bucket {
             // Mint a new christmas list badge
-            let list_bucket = ResourceBuilder::new()
+            let list_bucket = ResourceBuilder::new_fungible(DIVISIBILITY_NONE)
                 .metadata("name", format!("Christmas List ID #{}", self.lists.len() + 1))
-                .new_badge_fixed(1);
+                .initial_supply_fungible(1);
 
             // Store an empty list for the badge's address in the lists map
             self.lists.insert(list_bucket.resource_address(), vec![]);

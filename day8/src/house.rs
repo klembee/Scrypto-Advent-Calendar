@@ -11,17 +11,17 @@ blueprint! {
     impl House {
         pub fn new(gift_resource: ResourceDef) -> (Component, Bucket) {
             // Create a key badge, allowing people to call methods on this component
-            let key = ResourceBuilder::new()
+            let key = ResourceBuilder::new_fungible(DIVISIBILITY_NONE)
                         .metadata("name", "House Key")
-                        .new_badge_fixed(1);
+                        .initial_supply_fungible(1);
 
             // Create the milk and cookie tokens
-            let milk = ResourceBuilder::new()
+            let milk = ResourceBuilder::new_fungible(DIVISIBILITY_NONE)
                         .metadata("name", "Milk")
-                        .new_token_fixed(1);
-            let cookies = ResourceBuilder::new()
+                        .initial_supply_fungible(1);
+            let cookies = ResourceBuilder::new_fungible(DIVISIBILITY_NONE)
                             .metadata("name", "Cookie")
-                            .new_badge_fixed(3);
+                            .initial_supply_fungible(3);
 
             let component = Self {
                 // Store the resource definition of

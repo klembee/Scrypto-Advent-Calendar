@@ -120,19 +120,19 @@ blueprint! {
 
     impl WorkClock {
         pub fn new(nb_workers: u32, hour_salary: Decimal, time_oracle_address: Address) -> (Component, Bucket) {
-            let elf_badges = ResourceBuilder::new()
+            let elf_badges = ResourceBuilder::new_fungible(DIVISIBILITY_NONE)
                                     .metadata("name", "Elf Badge")
-                                    .new_badge_fixed(nb_workers);
+                                    .initial_supply_fungible(nb_workers);
 
             // Used to create and burn time sheets
-            let time_sheet_minter = ResourceBuilder::new()
+            let time_sheet_minter = ResourceBuilder::new_fungible(DIVISIBILITY_NONE)
                                         .metadata("name", "TimeSheet minter")
-                                        .new_badge_fixed(1);
+                                        .initial_supply_fungible(1);
 
             // Create the tokens that will be used to pay the elfs
-            let salary_tokens = ResourceBuilder::new()
+            let salary_tokens = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
                                     .metadata("name", "Elf Salary")
-                                    .new_token_fixed(100000000000_u64);
+                                    .initial_supply_fungible(100000000000_u64);
 
             let component = Self {
                 time_oracle: time_oracle_address.into(),
@@ -152,16 +152,12 @@ blueprint! {
             let (year, month, day, hour, minute, second, unix_time) = self.time_oracle.get_time();
 
             // Create a timesheet token
-            let timesheet_def = ResourceBuilder::new()
+            ResourceBuilder::new_fungible(DIVISIBILITY_NONE)
                     .metadata("name", format!("TimeSheet {}/{}/{} {}:{}:{}", year, month, day, hour, minute, second))
                     .metadata("date", format!("{}", unix_time))
-                    .new_token_mutable(self.time_sheet_minter.resource_def());
-
-            // Mint and return the created 
-            self.time_sheet_minter.authorize(|minter| {
-                timesheet_def.mint(1, minter)
-            })
-            
+                    .flags(BURNABLE)
+                    .badge(self.time_sheet_minter.resource_def(), MAY_BURN)
+                    .initial_supply_fungible(1)
         }
 
         pub fn end_work(&self, timesheet: Bucket) -> Bucket {
@@ -178,7 +174,7 @@ blueprint! {
 
             // Burn the timesheet
             self.time_sheet_minter.authorize(|minter| {
-                timesheet.burn(minter);
+                timesheet.burn_with_auth(minter);
             });
 
             let hours_worked = (unix_time - start_time) / 3600;

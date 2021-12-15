@@ -11,7 +11,7 @@ Today, we are building a House component containing a single `enter` method. I a
 - Account 2 will act as the house owner.
 - Account 3 will act as a thief trying to steal the presents inside the house.
 
-5. Right now account 1 has both the Santa and Owner badges: `resim show [account_1_address]`. Let's send the owner badge to account 2: `resim transfer 1 [owner_badge_address] $acc2`
+5. Right now account 1 has both the Santa and Owner badges: `resim show [account_1_address]`. Let's send the owner badge to account 2: `resim transfer 1,[owner_badge_address] [account2_address]`
 6. You can verify account 2 received it by typing: `resim show [account_2_address]`
 7. Call the `enter` method as account 1: `resim call-method [component_address] enter 1,[santa_badge_address]`
 8. Make account 2 the default user: `resim set-default-account [account2_address] [account_2_pubkey]`

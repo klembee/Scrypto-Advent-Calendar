@@ -10,9 +10,9 @@ blueprint! {
     impl TimeOracle {
         pub fn new(nb_admins: u32) -> (Component, Bucket) {
             // Create the admin badges
-            let admin_badges = ResourceBuilder::new()
+            let admin_badges = ResourceBuilder::new_fungible(DIVISIBILITY_NONE)
                                 .metadata("name", "UTCTimeOracle Admin Badge")
-                                .new_badge_fixed(nb_admins);
+                                .initial_supply_fungible(nb_admins);
 
             let component = Self {
                 admin_badge: admin_badges.resource_def(),

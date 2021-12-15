@@ -13,9 +13,9 @@ blueprint! {
         /// Creates a PriceOracle component, along with admin badges.
         pub fn new() -> Component {
             // Create usd tokens
-            let usd = ResourceBuilder::new()
+            let usd = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
                         .metadata("name", "USD")
-                        .new_token_fixed(100000);
+                        .initial_supply_fungible(100000);
 
             Self {
                 prices: LazyMap::new(),

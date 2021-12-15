@@ -14,9 +14,9 @@ blueprint! {
     impl Santa {
         pub fn new() -> Component {
             // Create the tokens that will represent the gifts
-            let gifts = ResourceBuilder::new()
+            let gifts = ResourceBuilder::new_fungible(DIVISIBILITY_NONE)
                             .metadata("name", "Gift")
-                            .new_badge_fixed(8000);
+                            .initial_supply_fungible(8000);
 
             // Instantiate the 10 house components
             let mut houses: Vec<House> = Vec::new();

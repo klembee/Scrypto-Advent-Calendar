@@ -14,7 +14,7 @@ Today we are building a more complex component. You will learn how to make a Gif
     - `resim new-token-fixed --name Flower 1`. And `resim call-method [oracle_component] update_price [flower_address] [usd_address] 5`
     - `resim new-token-fixed --name TeaPot 1`. And `resim call-method [oracle_component] update_price [teapot_address] [usd_address] 10`
     - `resim new-token-fixed --name iPod 1`. And `resim call-method [oracle_component] update_price [ipod_address] [usd_address] 400`
-1. Send the tea pot and ipod to the second account: `resim transfer 1 [teapot_address] [account2_address]` and `resim transfer 1 [ipod_address] [account2_address]`
+1. Send the tea pot and ipod to the second account: `resim transfer 1,[teapot_address] [account2_address]` and `resim transfer 1,[ipod_address] [account2_address]`
 
 ### Configure the GiftExchange
 1. `cd ../GiftExchange`

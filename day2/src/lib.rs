@@ -10,10 +10,10 @@ blueprint! {
     impl SantaCookieEater {
         pub fn new() -> (Component, Bucket) {
             // Create 1000 "Cookie" tokens
-            let cookie_bucket = ResourceBuilder::new()
+            let cookie_bucket = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "Cookie")
                 .metadata("symbol", "CKE")
-                .new_token_fixed(1000);
+                .initial_supply_fungible(1000);
 
             // Instantiate the component with an empty vault of "Cookie" tokens
             let component = Self {
