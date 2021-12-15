@@ -27,14 +27,16 @@ blueprint! {
             // Create the minter badge.
             // this badge will be owned by the component and will
             // allow it to mint new coal tokens and burn staker's badge
-            let minter = ResourceBuilder::new()
+            let minter = ResourceBuilder::new_fungible(DIVISIBILITY_NONE)
                                 .metadata("name", "Coal Minter Badge")
-                                .new_badge_fixed(1);
+                                .initial_supply_fungible(1);
 
             // Define the coal resource
-            let coal = ResourceBuilder::new()
+            let coal = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
                         .metadata("name", "Coal")
-                        .new_token_mutable(minter.resource_def());
+                        .flags(MINTABLE)
+                        .badge(minter.resource_def(), MAY_MINT)
+                        .no_initial_supply();
 
             Self {
                 minter: Vault::with_bucket(minter),
@@ -49,13 +51,11 @@ blueprint! {
             assert!(coal.resource_def() == self.stake_pool.resource_def(), "You can only stake coal !");
 
             // Create the badge used to withdraw the tokens in the futur
-            let staker_badge_def = ResourceBuilder::new()
+            let staker_badge = ResourceBuilder::new_fungible(DIVISIBILITY_NONE)
                     .metadata("name", "Coal Staker Badge")
-                    .new_token_mutable(self.minter.resource_def());
-            
-            let staker_badge = self.minter.authorize(|minter| {
-                staker_badge_def.mint(1, minter)
-            });
+                    .flags(MINTABLE | BURNABLE)
+                    .badge(self.minter.resource_def(), MAY_MINT | MAY_BURN)
+                    .initial_supply_fungible(1);
 
             // Save the stake's data on the component's state
             self.stakers.insert(staker_badge.resource_address(), StakerData { started_at: Context::current_epoch(), amount: coal.amount() });
@@ -74,10 +74,10 @@ blueprint! {
                     std::process::abort();
                 }
             };
-            
+
             // Burn the staker badge so that it cannot be used again
             self.minter.authorize(|minter| {
-                staker_badge.burn(minter);
+                staker_badge.burn_with_auth(minter)
             });
 
             // Mint coal depending on how long the user staked

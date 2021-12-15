@@ -105,9 +105,9 @@ blueprint! {
         pub fn new(price_oracle_address: Address) -> (Component, Bucket) {
             // Create the organizer badge.
             // Used to protect the `add_participant` and `prepare_exchange` methods
-            let organizer_badge = ResourceBuilder::new()
+            let organizer_badge = ResourceBuilder::new_fungible(DIVISIBILITY_NONE)
                                     .metadata("name", "Organizer Badge")
-                                    .new_badge_fixed(1);
+                                    .initial_supply_fungible(1);
 
             let component = Self {
                 price_oracle: price_oracle_address.into(),
@@ -129,10 +129,10 @@ blueprint! {
 
             // Create the participant's badge, used
             // as identification in `send_gift` method
-            let participant_badge =  ResourceBuilder::new()
+            let participant_badge =  ResourceBuilder::new_fungible(DIVISIBILITY_NONE)
                                         .metadata("name", "Participant Badge")
                                         .metadata("account", format!("{}", address))
-                                        .new_badge_fixed(1);
+                                        .initial_supply_fungible(1);
 
             self.participants.push(participant_badge.resource_address());
 

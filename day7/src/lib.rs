@@ -18,14 +18,16 @@ blueprint! {
         pub fn new() -> Component {
 
             // Create a badge allowing this component to mint new elf badges
-            let elf_badge_minter: Bucket = ResourceBuilder::new()
+            let elf_badge_minter: Bucket = ResourceBuilder::new_fungible(DIVISIBILITY_NONE)
                 .metadata("name", "Elf badge minter")
-                .new_badge_fixed(1);
+                .initial_supply_fungible(1);
 
             // Define a mutable resource representing the elf badges
-            let elf_badges: ResourceDef = ResourceBuilder::new()
+            let elf_badges: ResourceDef = ResourceBuilder::new_fungible(DIVISIBILITY_NONE)
                 .metadata("name", "Elf Badge")
-                .new_badge_mutable(elf_badge_minter.resource_address());
+                .flags(MINTABLE)
+                .badge(elf_badge_minter.resource_address(), MAY_MINT)
+                .no_initial_supply();
 
             // Instantiate the component
             Self {

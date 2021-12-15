@@ -15,14 +15,14 @@ blueprint! {
     impl PresentDistributor {
         pub fn new() -> Component {
             // Generate 1000 present tokens
-            let presents = ResourceBuilder::new()
+            let presents = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
                         .metadata("name", "Present")
-                        .new_token_fixed(1000);
+                        .initial_supply_fungible(1000);
 
             // Generate 1000 coal tokens
-            let coal = ResourceBuilder::new()
+            let coal = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
                         .metadata("name", "Coal")
-                        .new_token_fixed(1000);
+                        .initial_supply_fungible(1000);
 
             // Store the tokens in component's vaults
             Self {

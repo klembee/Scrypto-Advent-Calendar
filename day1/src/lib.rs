@@ -27,9 +27,9 @@ blueprint! {
             assert!(!self.presents.contains_key(&name), "Present already exist !");
 
             // Create the present token
-            let bucket = ResourceBuilder::new()
+            let bucket = ResourceBuilder::new_fungible(DIVISIBILITY_NONE)
                 .metadata("name", &name)
-                .new_token_fixed(quantity);
+                .initial_supply_fungible(quantity);
 
             // Store inside the present list
             self.presents.insert(name, Vault::with_bucket(bucket));
