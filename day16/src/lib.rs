@@ -147,14 +147,17 @@ blueprint! {
         }
 
         // Used to display information about your elf NFT
-        pub fn display_info(&self, elves: Bucket) {
+        pub fn display_info(&self, elves: BucketRef) {
             assert!(elves.amount() > Decimal::zero(), "Missing NFT !");
             assert!(elves.resource_def() == self.elf_def, "NFT definition not matching");
 
-            for nft in elves.get_nfts::<DegenerateElf>() {
+            for nft_id in elves.get_nft_ids() {
+                let data: DegenerateElf = self.elf_def.get_nft_data(nft_id);
                 info!("========");
-                info!("{}", nft.data())
+                info!("{}", data)
             }
+            
+            elves.drop();
         }
 
         // The following methods are used to randomly generate an elf
