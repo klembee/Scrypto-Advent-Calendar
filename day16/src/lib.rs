@@ -240,7 +240,7 @@ blueprint! {
         // Generate a random number
         // WARNING: DON'T USE THIS IN PRODUCTION !
         fn random_number(&mut self, min: i32, max: i32) -> usize {
-            let mut random_number: Decimal = (self.random_seed * (self.nb_minted as i32)).into();
+            let mut random_number: Decimal = (self.random_seed * (self.nonce as i32)).into();
             random_number = (random_number.abs() / i32::MAX) * (max - min) + min;
 
             self.nonce += 1;
