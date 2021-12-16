@@ -60,7 +60,7 @@ pub struct DegenerateElf {
     nose: Nose,
     eye_wear: Eyewear,
     background: Background,
-    color: u16
+    color: usize
 }
 
 impl fmt::Display for DegenerateElf {
@@ -222,8 +222,8 @@ blueprint! {
             }
         }
 
-        fn random_color(&mut self) -> u16 {
-            self.random_number(0, 0xFFFFFF) as u16
+        fn random_color(&mut self) -> usize {
+            self.random_number(0, 16777215)
         }
 
         // Generate the seed for random number generation
