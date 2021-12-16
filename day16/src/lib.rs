@@ -233,12 +233,9 @@ blueprint! {
         // WARNING: DON'T USE THIS IN PRODUCTION !
         fn random_number(&mut self, min: i32, max: i32) -> usize {
             self.random_seed = ( ( 75 * self.random_seed ) + 74 ) % 65537;
-            info!("{}", self.random_seed);
             let range : u64 = (max - min).try_into().unwrap();
             let shift : u64 = min.try_into().unwrap();
-            let random_number: usize = (self.random_seed % range + shift).try_into().unwrap();
-            info!("{}", random_number);
-            random_number
+            (self.random_seed % range + shift).try_into().unwrap()
         }
     }
 }
