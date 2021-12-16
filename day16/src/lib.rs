@@ -86,8 +86,7 @@ blueprint! {
         nb_minted: u128,
 
         // Used for randomness
-        random_seed: i32,
-        nonce: u128
+        random_seed: u64
     }
 
     impl DegenerateElves {
@@ -113,8 +112,7 @@ blueprint! {
                 mint_price: mint_price,
                 max_supply: max_supply,
                 nb_minted: 0,
-                random_seed: Self::generate_seed(),
-                nonce: 1
+                random_seed: Self::generate_seed()
             }.instantiate()
         }
 
@@ -227,24 +225,20 @@ blueprint! {
         }
 
         // Generate the seed for random number generation
-        fn generate_seed() -> i32 {
-            let mut seed: i32 = 1;
-            for byte in Context::transaction_signers()[0].to_vec().iter() {
-                if (seed * *byte as i32) != 0 {
-                    seed *= *byte as i32;
-                }
-            }
-            seed
+        fn generate_seed() -> u64 {
+            Context::current_epoch().try_into().unwrap()
         }
 
         // Generate a random number
         // WARNING: DON'T USE THIS IN PRODUCTION !
         fn random_number(&mut self, min: i32, max: i32) -> usize {
-            let mut random_number: Decimal = (self.random_seed * (self.nb_minted as i32)).into();
-            random_number = (random_number.abs() / i32::MAX) * (max - min) + min;
-
-            self.nonce += 1;
-            random_number.to_string().split(".").collect::<Vec<&str>>().get(0).unwrap().parse().unwrap()
+            self.random_seed = ( ( 75 * self.random_seed ) + 74 ) % 65537;
+            info!("{}", self.random_seed);
+            let range : u64 = (max - min).try_into().unwrap();
+            let shift : u64 = min.try_into().unwrap();
+            let random_number: usize = (self.random_seed % range + shift).try_into().unwrap();
+            info!("{}", random_number);
+            random_number
         }
     }
 }
