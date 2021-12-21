@@ -58,7 +58,7 @@ blueprint! {
 
             // Set the shares to 0 on the NFT
             nft_data.fund_share = Decimal::zero();
-            self.admin_badge.authorize(|badge| {
+            self.admin_badge.authorize(|badge| { 
                 self.member_nft_def.update_nft_data(auth.get_nft_id(), nft_data, badge);
             });
 
