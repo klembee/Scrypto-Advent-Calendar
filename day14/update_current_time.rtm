@@ -1,0 +1,5 @@
+# Create a proof of the admin badge
+CALL_METHOD ComponentAddress("020d3869346218a5e8deaaf2001216dc00fcacb79fb43e30ded79a") "create_proof" ResourceAddress("0354a9cd104edd0a5ec80f2af3932cf5fdedb23af5694460ac18c8");
+
+# Change the time
+CALL_METHOD ComponentAddress("02122d2a18f4ec56ba987317a28ffb4077bb75111a08b177afd310") "set_current_time" 1640433600u64;
