@@ -1,0 +1,5 @@
+# Get the admin badge proof
+CALL_METHOD ComponentAddress("020d3869346218a5e8deaaf2001216dc00fcacb79fb43e30ded79a") "create_proof" ResourceAddress("03f12bfaeafdcc040a932731aa7b3c5064098a6b58f12d9c5eb9ed");
+
+# Call the "start" method
+CALL_METHOD ComponentAddress("0271a4359aaefa397020301dbfb8db3c693ac8b571ab405ce88bc3") "start";

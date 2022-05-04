@@ -3,16 +3,16 @@ use scrypto::prelude::*;
 blueprint! {
     struct PresentList {
         // Used to store the presents in the list for every account
-        lists: HashMap<Address, Vec<String>>,
+        lists: HashMap<ResourceAddress, Vec<String>>,
     }
 
     impl PresentList {
-        pub fn new() -> Component {
+        pub fn new() -> ComponentAddress {
             // Store all required information info the component's state
             Self {
                 lists: HashMap::new()
             }
-            .instantiate()
+            .instantiate().globalize()
         }
         
         // Allow the user to start a new christmas list.
@@ -20,9 +20,10 @@ blueprint! {
         // presents associated with it.
         pub fn start_new_list(&mut self) -> Bucket {
             // Mint a new christmas list badge
-            let list_bucket = ResourceBuilder::new_fungible(DIVISIBILITY_NONE)
+            let list_bucket = ResourceBuilder::new_fungible()
+                .divisibility(DIVISIBILITY_NONE)
                 .metadata("name", format!("Christmas List ID #{}", self.lists.len() + 1))
-                .initial_supply_fungible(1);
+                .initial_supply(1);
 
             // Store an empty list for the badge's address in the lists map
             self.lists.insert(list_bucket.resource_address(), vec![]);
@@ -32,8 +33,10 @@ blueprint! {
         }
 
         // Add a new present to the list
-        pub fn add(&mut self, present_name: String, list_badge: BucketRef) {
-            let list_address = self.get_list_id(list_badge);
+        pub fn add(&mut self, present_name: String, list_badge: Proof) {
+            let list_address = list_badge.resource_address();
+            assert!(self.lists.contains_key(&list_address), "Invalid badge provided");
+
             let list = self.lists.get(&list_address).unwrap();
 
             // Make sure that the present is not already inside the user's list
@@ -48,8 +51,10 @@ blueprint! {
         }
 
         // Remove a present in the list
-        pub fn remove(&mut self, present_name: String, list_badge: BucketRef) {
-            let list_address = self.get_list_id(list_badge);
+        pub fn remove(&mut self, present_name: String, list_badge: Proof) {
+            let list_address = list_badge.resource_address();
+            assert!(self.lists.contains_key(&list_address), "Invalid badge provided!");
+
             let list = self.lists.get(&list_address).unwrap();
 
             // Make sure that the present is not already inside the user's list
@@ -67,8 +72,10 @@ blueprint! {
 
         // Display the presents stored in the list
         // associated with the list badge
-        pub fn display_list(&self, list_badge: BucketRef) {
-            let list_address = self.get_list_id(list_badge);
+        pub fn display_list(&self, list_badge: Proof) {
+            let list_address = list_badge.resource_address();
+            assert!(self.lists.contains_key(&list_address), "Invalid badge provided!");
+
             let list = self.lists.get(&list_address).unwrap();
 
             info!("==== Christmas list content");
@@ -77,27 +84,9 @@ blueprint! {
             }
         }
 
-        // New method added. This is to make it easier to retrieve the lists
-        // from the Santa component.
-        pub fn get_lists(&self) -> HashMap<Address, Vec<String>> {
+        // This method is used to retrieve the lists from the Santa component
+        pub fn get_lists(&self) -> HashMap<ResourceAddress, Vec<String>> {
             self.lists.clone()
-        }
-
-        // Private method to get the badge's address while doing
-        // some assertions on the passed badge instead of 
-        // only taking the badge.resource_address()
-        fn get_list_id(&self, badge: BucketRef) -> Address {
-            let address = badge.resource_address();
-
-            // Make sure that the provided badge quantity is greater than 0
-            assert!(badge.amount() > Decimal::zero(), "You have to pass the list badge!");
-            assert!(self.lists.contains_key(&address));
-
-            // Drop the badge since we don't need it anymore or else we will get an error
-            badge.drop();
-
-            // Return the list
-            address
         }
     }
 }

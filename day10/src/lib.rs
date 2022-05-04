@@ -19,46 +19,47 @@ blueprint! {
         // Will hold the staked Coal tokens
         stake_pool: Vault,
 
-        stakers: HashMap<Address, StakerData>
+        stakers: HashMap<ResourceAddress, StakerData>
     }
 
     impl CoalYieldFarming {
-        pub fn new() -> Component {
+        pub fn new() -> ComponentAddress {
             // Create the minter badge.
             // this badge will be owned by the component and will
             // allow it to mint new coal tokens and burn staker's badge
-            let minter = ResourceBuilder::new_fungible(DIVISIBILITY_NONE)
+            let minter = ResourceBuilder::new_fungible()
+                                .divisibility(DIVISIBILITY_NONE)
                                 .metadata("name", "Coal Minter Badge")
-                                .initial_supply_fungible(1);
+                                .initial_supply(1);
 
             // Define the coal resource
-            let coal = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
+            let coal = ResourceBuilder::new_fungible()
                         .metadata("name", "Coal")
-                        .flags(MINTABLE)
-                        .badge(minter.resource_def(), MAY_MINT)
+                        .mintable(rule!(require(minter.resource_address())), LOCKED)
                         .no_initial_supply();
 
             Self {
                 minter: Vault::with_bucket(minter),
                 stake_pool: Vault::new(coal),
                 stakers: HashMap::new()
-            }.instantiate()
+            }.instantiate().globalize()
         }
 
         // Allow caller to stake their coal tokens.
         // This method sends a badge allowing the user to withdraw their funds later
         pub fn stake(&mut self, coal: Bucket) -> Bucket {
-            assert!(coal.resource_def() == self.stake_pool.resource_def(), "You can only stake coal !");
+            assert!(coal.resource_address() == self.stake_pool.resource_address(), "You can only stake coal !");
 
-            // Create the badge used to withdraw the tokens in the futur
-            let staker_badge = ResourceBuilder::new_fungible(DIVISIBILITY_NONE)
+            // Create the badge used to withdraw the tokens in the future
+            let staker_badge = ResourceBuilder::new_fungible()
+                    .divisibility(DIVISIBILITY_NONE)
                     .metadata("name", "Coal Staker Badge")
-                    .flags(MINTABLE | BURNABLE)
-                    .badge(self.minter.resource_def(), MAY_MINT | MAY_BURN)
-                    .initial_supply_fungible(1);
+                    .mintable(rule!(require(self.minter.resource_address())), LOCKED)
+                    .burnable(rule!(require(self.minter.resource_address())), LOCKED)
+                    .initial_supply(1);
 
             // Save the stake's data on the component's state
-            self.stakers.insert(staker_badge.resource_address(), StakerData { started_at: Context::current_epoch(), amount: coal.amount() });
+            self.stakers.insert(staker_badge.resource_address(), StakerData { started_at: Runtime::current_epoch(), amount: coal.amount() });
             self.stake_pool.put(coal);
 
             // Return the staker badge to the caller
@@ -76,14 +77,14 @@ blueprint! {
             };
 
             // Burn the staker badge so that it cannot be used again
-            self.minter.authorize(|minter| {
-                staker_badge.burn_with_auth(minter)
+            self.minter.authorize(|| {
+                staker_badge.burn()
             });
 
             // Mint coal depending on how long the user staked
-            let reward = self.minter.authorize(|minter| {
-                let epochs_staked = Context::current_epoch() - staker_data.started_at;
-                self.stake_pool.resource_def().mint(10 * epochs_staked, minter)
+            let reward = self.minter.authorize(|| {
+                let epochs_staked = Runtime::current_epoch() - staker_data.started_at;
+                borrow_resource_manager!(self.stake_pool.resource_address()).mint(10 * epochs_staked)
             });
             
             // Return the staked amount + newly minted tokens
@@ -93,8 +94,8 @@ blueprint! {
         // Send 1000 Coal tokens to the caller
         // to help you test this component
         pub fn faucet(&self) -> Bucket {
-            self.minter.authorize(|minter| {
-                self.stake_pool.resource_def().mint(1000, minter)
+            self.minter.authorize(|| {
+                borrow_resource_manager!(self.stake_pool.resource_address()).mint(1000)
             })
         }
     }
