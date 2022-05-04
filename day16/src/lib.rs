@@ -52,7 +52,7 @@ pub enum Background {
     Space
 }
 
-#[derive(NftData)]
+#[derive(NonFungibleData)]
 pub struct DegenerateElf {
     head: Head,
     clothing: Clothing,
@@ -75,34 +75,31 @@ blueprint! {
         // the component to mint new elves
         mint_badge: Vault,
         // Resource definition of the elf NFT
-        elf_def: ResourceDef,
+        elf_def: ResourceAddress,
         // Vault to store the payments
         payment_vault: Vault,
         // Cost of minting one NFT
         mint_price: Decimal,
         // Maximum supply of the nfts
-        max_supply: u128,
+        max_supply: u64,
         // Keep track of the number of elves minted
-        nb_minted: u128,
-
-        // Used for randomness
-        random_seed: u64
+        nb_minted: u64,
     }
 
     impl DegenerateElves {
         // Instantiate a new DegenerateElves component with a
         // minting cost and a max supply
-        pub fn new(mint_price: Decimal, max_supply: u128) -> Component {
+        pub fn new(mint_price: Decimal, max_supply: u64) -> ComponentAddress {
             // Create the elf minting badge
-            let mint_badge = ResourceBuilder::new_fungible(DIVISIBILITY_NONE)
+            let mint_badge = ResourceBuilder::new_fungible()
+                                .divisibility(DIVISIBILITY_NONE)
                                 .metadata("name", "DegenerateElf Minting Badge")
-                                .initial_supply_fungible(1);
+                                .initial_supply(1);
 
             // Create the elf NFT definition
             let elf_def = ResourceBuilder::new_non_fungible()
                             .metadata("name", "Degenerate Elves")
-                            .flags(MINTABLE)
-                            .badge(mint_badge.resource_def(), MAY_MINT)
+                            .mintable(rule!(require(mint_badge.resource_address())), LOCKED)
                             .no_initial_supply();
 
             Self {
@@ -112,15 +109,13 @@ blueprint! {
                 mint_price: mint_price,
                 max_supply: max_supply,
                 nb_minted: 0,
-                random_seed: Self::generate_seed()
-            }.instantiate()
+            }.instantiate().globalize()
         }
 
         // Mint a new elf NFT. Requires a payment
         // Return the NFT and the change (if payment > mint_cost)
-        pub fn mint(&mut self, payment: Bucket) -> (Bucket, Bucket) {
+        pub fn mint(&mut self, mut payment: Bucket) -> (Bucket, Bucket) {
             assert!(payment.amount() >= self.mint_price, "Minting costs {}", self.mint_price);
-            assert!(payment.resource_def() == RADIX_TOKEN.into(), "You can only pay in XRD");
             assert!(self.nb_minted <= self.max_supply, "Max supply reached !");
 
             self.payment_vault.put(payment.take(self.mint_price));
@@ -136,8 +131,8 @@ blueprint! {
                 color: self.random_color()
             };
 
-            let elf = self.mint_badge.authorize(|badge| {
-                self.elf_def.mint_nft(self.nb_minted, elf_attributes, badge)
+            let elf = self.mint_badge.authorize(|| {
+                borrow_resource_manager!(self.elf_def).mint_non_fungible(&NonFungibleId::from_u64(self.nb_minted), elf_attributes)
             });
 
             self.nb_minted += 1;
@@ -147,12 +142,11 @@ blueprint! {
         }
 
         // Used to display information about your elf NFT
-        pub fn display_info(&self, elves: BucketRef) {
-            assert!(elves.amount() > Decimal::zero(), "Missing NFT !");
-            assert!(elves.resource_def() == self.elf_def, "NFT definition not matching");
+        pub fn display_info(&self, elves: Proof) {
+            assert!(elves.resource_address() == self.elf_def, "NFT definition not matching");
 
-            for nft_id in elves.get_nft_ids() {
-                let data: DegenerateElf = self.elf_def.get_nft_data(nft_id);
+            for non_fungible in elves.non_fungibles() {
+                let data: DegenerateElf = non_fungible.data();
                 info!("========");
                 info!("{}", data)
             }
@@ -227,24 +221,12 @@ blueprint! {
             self.random_number(0, 16777215)
         }
 
-        // Generate the seed for random number generation
-        fn generate_seed() -> u64 {
-            let mut seed: u64 = 1;
-            for byte in Context::transaction_signers()[0].to_vec().iter() {
-                if (seed * *byte as u64) != 0 {
-                    seed *= *byte as u64;
-                }
-            }
-            seed
-        }
-
         // Generate a random number
         // WARNING: DON'T USE THIS IN PRODUCTION !
-        fn random_number(&mut self, min: i32, max: i32) -> usize {
-            self.random_seed = ( ( 1664525 * self.random_seed ) + 1013904223 ) % 4294967296;
-            let range : u64 = (max - min + 1).try_into().unwrap();
-            let shift : u64 = min.try_into().unwrap();
-            (self.random_seed % range + shift).try_into().unwrap()
+        fn random_number(&mut self, min: u64, max: u64) -> usize {
+            let mut random_number = Runtime::generate_uuid() as u64;
+            random_number = (random_number / u64::MAX) * (max - min) + min;
+            random_number as usize
         }
     }
 }

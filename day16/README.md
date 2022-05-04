@@ -9,4 +9,3 @@ Today, you will learn how to create your own degenerate NFT project !
 1. Mint some nfts: `resim call-method [component_address] mint 20,030000000000000000000000000000000000000000000000000004`
 1. Look at the resources on your account: `resim show [account_address]`. Find the NFT's resource definition address.
 1. Display the properties of your nfts: `resim call-method [component_address] display_info 1,[nft_resource_definition]`.
-1. Share the attributes you got in the [Scrypto Discord chanel](https://discord.gg/radixdlt) !
