@@ -7,7 +7,7 @@ Today, NFTs were integrated into Scrypto as part of the Alexandria release. We a
 1. Reset your environment: `resim reset`
 2. Create the default account: `resim new-account`
 3. Build and publish the blueprints: `resim publish .`. Take note of the returned package address
-4. Instantiate a new VaccinePassport component: `resim call-function [package_address] VaccinePassport new`. The third ResourceDef is the address of the passport NFT resource definition. Remember it.
+4. Instantiate a new VaccinePassport component: `resim call-function [package_address] VaccinePassport new`. The third Resource is the address of the passport NFT resource definition. Remember it.
 5. Create a new empty passport: `resim call-method [component_address] get_new_passport`.
 
 ### Setup the party component
