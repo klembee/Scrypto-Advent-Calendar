@@ -1,0 +1,13 @@
+# Get the organizer badge from the account 1
+CALL_METHOD ComponentAddress("02dbbcc440e1f4b402675af83b2f39220cfa2ea77a4ad890cd8252") "withdraw" ResourceAddress("031c067182f9f35e6246edf4b7299f3d4f5363875832c6ba8748b3");
+
+# Take the organizer badge and make it available in the auth zone
+TAKE_FROM_WORKTOP ResourceAddress("031c067182f9f35e6246edf4b7299f3d4f5363875832c6ba8748b3") Bucket("organizer_badge_bucket");
+CREATE_PROOF_FROM_BUCKET Bucket("organizer_badge_bucket") Proof("organizer_badge");
+PUSH_TO_AUTH_ZONE Proof("organizer_badge");
+
+# Add the two accounts as participants
+CALL_METHOD ComponentAddress("02c4e370f1f8f4a96cda0962acce820d8a22d3bf5b4e8c8e3bb344") "add_participant" ComponentAddress("02dbbcc440e1f4b402675af83b2f39220cfa2ea77a4ad890cd8252");
+CALL_METHOD ComponentAddress("02c4e370f1f8f4a96cda0962acce820d8a22d3bf5b4e8c8e3bb344") "add_participant" ComponentAddress("02c026ae65349ab7f248eebfd40cfcb3c7804b1aab4f1c177d9dca");
+
+CALL_METHOD_WITH_ALL_RESOURCES ComponentAddress("02dbbcc440e1f4b402675af83b2f39220cfa2ea77a4ad890cd8252") "deposit_batch";

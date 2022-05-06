@@ -1,0 +1,11 @@
+# Create proof of the admin badge
+CALL_METHOD ComponentAddress("020d3869346218a5e8deaaf2001216dc00fcacb79fb43e30ded79a") "create_proof" ResourceAddress("0364720cf7a791747705633f563f2875be3d3d53ebc3dd0bbca84e");
+
+# Withdraw 2000 GUM from thhe account
+CALL_METHOD ComponentAddress("020d3869346218a5e8deaaf2001216dc00fcacb79fb43e30ded79a") "withdraw_by_amount" Decimal("2000") ResourceAddress("0376e5293bb7569e9f95729946357398face6ea7acc661d590af14");
+TAKE_FROM_WORKTOP_BY_AMOUNT Decimal("1000") ResourceAddress("0376e5293bb7569e9f95729946357398face6ea7acc661d590af14") Bucket("gum1");
+TAKE_FROM_WORKTOP_BY_AMOUNT Decimal("1000") ResourceAddress("0376e5293bb7569e9f95729946357398face6ea7acc661d590af14") Bucket("gum2");
+
+# Add the first account as recipient
+CALL_METHOD ComponentAddress("02dfa63bbea60bb120909b83885c3092ede259c0cf4f65457f6083") "add_recipient" ComponentAddress("020d3869346218a5e8deaaf2001216dc00fcacb79fb43e30ded79a") Bucket("gum1");
+CALL_METHOD ComponentAddress("02dfa63bbea60bb120909b83885c3092ede259c0cf4f65457f6083") "add_recipient" ComponentAddress("02e0905317d684478c275540e2ed7170f217e0c557805f7fd2a0d3") Bucket("gum2");

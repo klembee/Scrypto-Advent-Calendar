@@ -4,8 +4,8 @@ blueprint! {
     struct CoffeeMachine {}
 
     impl CoffeeMachine {
-        pub fn new() -> Component{
-            Self{}.instantiate()
+        pub fn new() -> ComponentAddress {
+            Self{}.instantiate().globalize()
         }
 
         pub fn make_coffee() {

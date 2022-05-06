@@ -3,7 +3,7 @@ use scrypto::prelude::*;
 blueprint! {
     struct UTCTimeOracle {
         // Used to update the time
-        admin_badge: ResourceDef,
+        admin_badge: ResourceAddress,
         
         year: u16,
         month: u8,
@@ -15,14 +15,15 @@ blueprint! {
     }
 
     impl UTCTimeOracle {
-        pub fn new(nb_admins: u32) -> (Component, Bucket) {
+        pub fn new(nb_admins: u32) -> (ComponentAddress, Bucket) {
             // Create the admin badges
-            let admin_badges = ResourceBuilder::new_fungible(DIVISIBILITY_NONE)
+            let admin_badges = ResourceBuilder::new_fungible()
+                                .divisibility(DIVISIBILITY_NONE)
                                 .metadata("name", "UTCTimeOracle Admin Badge")
-                                .initial_supply_fungible(nb_admins);
+                                .initial_supply(nb_admins);
 
             let component = Self {
-                admin_badge: admin_badges.resource_def(),
+                admin_badge: admin_badges.resource_address(),
                 year: 0,
                 month: 0,
                 day: 0,
@@ -33,11 +34,14 @@ blueprint! {
             }
             .instantiate();
 
+            let auth_rules = AccessRules::new()
+                .method("set_current_time", rule!(require(admin_badges.resource_address())))
+                .default(rule!(allow_all));
+
             // Return the component and the admin badges
-            (component, admin_badges)
+            (component.add_access_check(auth_rules).globalize(), admin_badges)
         }
 
-        #[auth(admin_badge)]
         pub fn set_current_time(&mut self, year: u16, month: u8, day: u8, hour: u8, minute: u8, second: u8, second_since_unix: u64) {
             self.year = year;
             self.month = month;

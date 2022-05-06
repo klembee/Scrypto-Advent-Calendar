@@ -1,7 +1,6 @@
 use scrypto::prelude::*;
-use sbor::*;
 
-#[derive(NftData, Decode, Encode, TypeId, Describe)]
+#[derive(NonFungibleData, Decode, Encode, TypeId, Describe)]
 pub struct MemberData {
     name: String,
     #[scrypto(mutable)]
@@ -14,32 +13,34 @@ pub struct MemberData {
 
 blueprint! {
     struct MembershipSystem {
-        admin_def: ResourceDef,
+        admin_def: ResourceAddress,
         minter: Vault,
         contributions: Vault,
-        member_nft_def: ResourceDef,
+        member_nft_def: ResourceAddress,
         nb_members: u64,
     }
 
     impl MembershipSystem {
-        pub fn new() -> (Component, Bucket) {
+        pub fn new() -> (ComponentAddress, Bucket) {
             // Create an admin badge
-            let admin: Bucket = ResourceBuilder::new_fungible(DIVISIBILITY_NONE)
-                                .initial_supply_fungible(1);
+            let admin: Bucket = ResourceBuilder::new_fungible()
+                                .divisibility(DIVISIBILITY_NONE)
+                                .initial_supply(1);
 
             // Minter badge, kept by the component
             // to mint/burn/update new member NFTs
-            let minter = ResourceBuilder::new_fungible(DIVISIBILITY_NONE)
-                            .initial_supply_fungible(1);
+            let minter = ResourceBuilder::new_fungible()
+                            .divisibility(DIVISIBILITY_NONE)
+                            .initial_supply(1);
 
             // Create the definition of the member NFT.
             // Declare the NFT as mintable, burnable, recallable and updatable by 
             // the minter
             let member_nft_def = ResourceBuilder::new_non_fungible()
                                 .metadata("name", "Member NFT")
-                                .flags(MINTABLE | BURNABLE | RECALLABLE | INDIVIDUAL_METADATA_MUTABLE)
-                                .badge(minter.resource_def(), MAY_MINT | MAY_BURN | MAY_CHANGE_INDIVIDUAL_METADATA)
-                                .badge(admin.resource_def(), MAY_CHANGE_INDIVIDUAL_METADATA)
+                                .mintable(rule!(require(minter.resource_address())), LOCKED)
+                                .burnable(rule!(require(minter.resource_address())), LOCKED)
+                                .updateable_non_fungible_data(rule!(require(minter.resource_address()) || require(admin.resource_address())), LOCKED)
                                 .no_initial_supply();
 
             let component = Self {
@@ -47,11 +48,11 @@ blueprint! {
                 contributions: Vault::new(RADIX_TOKEN),
                 member_nft_def: member_nft_def,
                 nb_members: 0,
-                admin_def: admin.resource_def()
+                admin_def: admin.resource_address()
             }
             .instantiate();
 
-            (component, admin)
+            (component.globalize(), admin)
         }
 
         // Allow anyone to become a member of the DAO.
@@ -59,31 +60,33 @@ blueprint! {
         pub fn become_member(&mut self, name: String) -> Bucket {
             self.nb_members += 1;
 
-            self.minter.authorize(|badge| {
-                self.member_nft_def.mint_nft(self.nb_members.into(), MemberData{
+            self.minter.authorize(|| {
+                borrow_resource_manager!(self.member_nft_def).mint_non_fungible(&NonFungibleId::from_u64(self.nb_members), MemberData{
                     name: name, 
                     good_member_points: Decimal::zero(),
                     is_banned: false,
                     fund_share: Decimal::zero()
-                }, badge)
+                })
             })
         }
 
         // Allow members to contribute XRD to the
         // DAO's vault. The member receive points based on
         // how much they give
-        #[auth(member_nft_def)]
-        pub fn contribute(&self, payment: Bucket) {
+        pub fn contribute(&mut self, payment: Bucket, auth: Proof) {
+            assert_eq!(auth.resource_address(), self.member_nft_def, "Wrong badge provided!");
+            let auth_nft = auth.non_fungible();
+
             let points = payment.amount();
             self.contributions.put(payment);
 
             // Add points to the nft metadata
-            let mut nft_data: MemberData = self.member_nft_def.get_nft_data(auth.get_nft_id());
+            let mut nft_data: MemberData = auth_nft.data();
             assert!(!nft_data.is_banned, "You are banned from the DAO !");  
             nft_data.good_member_points += points;
 
-            self.minter.authorize(|badge| {
-                self.member_nft_def.update_nft_data(auth.get_nft_id(), nft_data, badge);
+            self.minter.authorize(|| {
+                borrow_resource_manager!(self.member_nft_def).update_non_fungible_data(&auth_nft.id(), nft_data);
             });
 
             info!("Thank you ! You received {} points !", points);
@@ -91,23 +94,27 @@ blueprint! {
 
         // Allow members with more than 10000 points
         // to ban another member
-        #[auth(member_nft_def)]
-        pub fn ban_member(&mut self, nft_id: u128) {      
-            let nft_data: MemberData = self.member_nft_def.get_nft_data(auth.get_nft_id());
+        pub fn ban_member(&mut self, nft_id: u64, auth: Proof) {
+            assert_eq!(auth.resource_address(), self.member_nft_def, "Wrong badge provided!");     
+            let auth_nft = auth.non_fungible();
+            
+            let nft_data: MemberData = auth_nft.data();
             assert!(!nft_data.is_banned, "You are banned from the DAO !");
-            assert!(nft_data.good_member_points >= 10000.into(), "You do not have enough points to ban another member !");
+            assert!(nft_data.good_member_points >= dec!("10000"), "You do not have enough points to ban another member !");
 
-            let mut other_member_nft_data: MemberData = self.member_nft_def.get_nft_data(nft_id);
+            let member_resource_manager = borrow_resource_manager!(self.member_nft_def);
+
+            let mut other_member_nft_data: MemberData = member_resource_manager.get_non_fungible_data(&NonFungibleId::from_u64(nft_id));
             other_member_nft_data.is_banned = true;
-            self.minter.authorize(|badge| {
-                self.member_nft_def.update_nft_data(nft_id, other_member_nft_data, badge);
+            self.minter.authorize(|| {
+                member_resource_manager.update_non_fungible_data(&NonFungibleId::from_u64(nft_id), other_member_nft_data);
             });
         }
 
         // Will be used by other components of the DAO to
         // get the member NFT resource definition
-        pub fn get_member_nft_def(&self) -> Address {
-            self.member_nft_def.address()
+        pub fn get_member_nft_def(&self) -> ResourceAddress {
+            self.member_nft_def
         }
 
         pub fn get_nb_members(&self) -> u64 {

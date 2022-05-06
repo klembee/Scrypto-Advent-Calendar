@@ -9,24 +9,26 @@ blueprint! {
         // Vault that will contain the badge allowing this component to mint new elf_badges
         elf_badge_minter: Vault,
         // Resource definition of the elf badges
-        elf_badge: ResourceDef,
+        elf_badge: ResourceAddress,
         // Maps elf's badge to an hashmap mapping toy name to quantity
-        toys: HashMap<Address, HashMap<String, u32>>
+        toys: HashMap<ResourceAddress, HashMap<String, u32>>
     }
 
     impl ElfWorkshop {
-        pub fn new() -> Component {
-
+        pub fn new() -> ComponentAddress {
             // Create a badge allowing this component to mint new elf badges
-            let elf_badge_minter: Bucket = ResourceBuilder::new_fungible(DIVISIBILITY_NONE)
+            let elf_badge_minter: Bucket = ResourceBuilder::new_fungible()
+                .divisibility(DIVISIBILITY_NONE)
                 .metadata("name", "Elf badge minter")
-                .initial_supply_fungible(1);
+                .initial_supply(1);
 
-            // Define a mutable resource representing the elf badges
-            let elf_badges: ResourceDef = ResourceBuilder::new_fungible(DIVISIBILITY_NONE)
+            // Define a mintable resource representing the elf badges
+            // Only people presenting the elf_badge_minter badge can mint this resource.
+            // The LOCKED flag makes sure that we cannot update this authorization rule.
+            let elf_badges: ResourceAddress = ResourceBuilder::new_fungible()
+                .divisibility(DIVISIBILITY_NONE)
                 .metadata("name", "Elf Badge")
-                .flags(MINTABLE)
-                .badge(elf_badge_minter.resource_address(), MAY_MINT)
+                .mintable(auth!(require(elf_badge_minter.resource_address())), LOCKED)
                 .no_initial_supply();
 
             // Instantiate the component
@@ -35,23 +37,22 @@ blueprint! {
                 elf_badge: elf_badges,
                 toys: HashMap::new()
             }
-            .instantiate()
+            .instantiate().globalize()
         }
 
         pub fn become_elf(&mut self) -> Bucket {
             info!("Welcome to the factory, here is your badge");
 
             // Mint a new badge and send it to the caller
-            // Vault.authorize is a shortcut, instead of having to take the badge from 
-            // the vault and putting it back in after.
-            self.elf_badge_minter.authorize(|badge| {
-                self.elf_badge.mint(1, badge)
+            // Vault.authorize takes the badge from the vault and puts it
+            // on the component's auth zone.
+            self.elf_badge_minter.authorize(|| {
+                borrow_resource_manager!(self.elf_badge).mint(1)
             })
         }
 
-        pub fn create_toy(&mut self, name: String, badge: BucketRef) {
-            assert!(badge.amount() > Decimal::zero(), "Where is your badge ?");
-            assert!(badge.resource_def() == self.elf_badge, "That's not a valid bage !");
+        pub fn create_toy(&mut self, name: String, badge: Proof) {
+            assert!(badge.resource_address() == self.elf_badge, "That's not a valid bage !");
             
             // The badge's address is used to identify the elf
             let elf_id = badge.resource_address();

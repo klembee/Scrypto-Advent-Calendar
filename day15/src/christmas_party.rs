@@ -1,13 +1,13 @@
 use sbor::*;
 use scrypto::prelude::*;
 
-#[derive(TypeId, Decode, Encode, Describe, NftData)]
+#[derive(TypeId, Decode, Encode, Describe, NonFungibleData)]
 pub struct Vacine {
     name: String,
     epoch_taken: u64
 }
 
-#[derive(NftData)]
+#[derive(NonFungibleData)]
 pub struct Passport {
     #[scrypto(mutable)]
     vacines: Vec<Vacine>
@@ -16,23 +16,22 @@ pub struct Passport {
 blueprint! {
     struct ChristmasParty {
         // Resource Definition of the passport NFT
-        passport_nft_def: ResourceDef
+        passport_nft_def: ResourceAddress
     }
 
     impl ChristmasParty {
-        pub fn new(passport_nft_def: Address) -> Component {
+        pub fn new(passport_nft_def: ResourceAddress) -> ComponentAddress {
             Self {
-                passport_nft_def: passport_nft_def.into()
-            }.instantiate()
+                passport_nft_def: passport_nft_def
+            }.instantiate().globalize()
         }
 
-        pub fn enter_party(&self, vacine_passport: BucketRef) {
-            assert!(vacine_passport.amount() > Decimal::zero(), "Missing passport");
-            assert!(vacine_passport.resource_def() == self.passport_nft_def, "Wrong passport !");
+        pub fn enter_party(&self, vacine_passport: Proof) {
+            assert!(vacine_passport.resource_address() == self.passport_nft_def, "Wrong passport !");
 
-            let data: Passport = self.passport_nft_def.get_nft_data(vacine_passport.get_nft_id());
-            vacine_passport.drop();
-            
+            let resource_manager = borrow_resource_manager!(self.passport_nft_def);
+            let data: Passport = resource_manager.get_non_fungible_data(&vacine_passport.non_fungible::<Passport>().id());
+
             if data.vacines.len() > 0 {
                 info!("Come in !");
             } else {

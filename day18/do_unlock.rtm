@@ -1,0 +1,5 @@
+# Create proof of the admin badge
+CALL_METHOD ComponentAddress("020d3869346218a5e8deaaf2001216dc00fcacb79fb43e30ded79a") "create_proof" ResourceAddress("0364720cf7a791747705633f563f2875be3d3d53ebc3dd0bbca84e");
+
+# Call the do_unlock method
+CALL_METHOD ComponentAddress("02dfa63bbea60bb120909b83885c3092ede259c0cf4f65457f6083") "do_unlock";

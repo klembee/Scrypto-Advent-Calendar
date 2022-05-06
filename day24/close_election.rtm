@@ -1,0 +1,5 @@
+# Create proof of the member nft
+CALL_METHOD ComponentAddress("020d3869346218a5e8deaaf2001216dc00fcacb79fb43e30ded79a") "create_proof_by_ids" TreeSet<NonFungibleId>(NonFungibleId("0000000000000001")) ResourceAddress("03952171b8f01fb6f7d3553e27d9aef1f42d9a0840d581262d11e1"); 
+
+# Call the start_election method
+CALL_METHOD ComponentAddress("020ba13c4f60add16bea964cd698953f3fcdc48ef23e10315006ae") "close_election";

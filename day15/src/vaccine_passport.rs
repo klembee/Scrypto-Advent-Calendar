@@ -1,13 +1,13 @@
 use sbor::*;
 use scrypto::prelude::*;
 
-#[derive(TypeId, Decode, Encode, Describe, NftData)]
+#[derive(TypeId, Decode, Encode, Describe, NonFungibleData)]
 pub struct Vaccine {
     name: String,
     epoch_taken: u64
 }
 
-#[derive(NftData)]
+#[derive(NonFungibleData)]
 pub struct Passport {
     #[scrypto(mutable)]
     vaccines: Vec<Vaccine>
@@ -15,58 +15,54 @@ pub struct Passport {
 
 blueprint! {
     struct VaccinePassport {
-        admin_def: ResourceDef,
+        admin_def: ResourceAddress,
         // Token that the this component use to mint and update
         // vaccine passports NFTs
         passport_manager_badge: Vault,
         // Resource definition of the NFTs
-        passport_def: ResourceDef,
+        passport_def: ResourceAddress,
         // Number of passports minted
-        nb_passports: u128
+        nb_passports: u64
     }
 
     impl VaccinePassport {
-        pub fn new() -> (Component, Bucket) {
-            let passport_manager_badge: Bucket = ResourceBuilder::new_fungible(DIVISIBILITY_NONE)
+        pub fn new() -> (ComponentAddress, Bucket) {
+            let passport_manager_badge: Bucket = ResourceBuilder::new_fungible()
+                                                    .divisibility(DIVISIBILITY_NONE)
                                                     .metadata("name", "Vaccine Passport Manager")
-                                                    .initial_supply_fungible(1);
+                                                    .initial_supply(1);
 
             // Define the admin badge
-            let admin_badge: Bucket = ResourceBuilder::new_fungible(DIVISIBILITY_NONE)
+            let admin_badge: Bucket = ResourceBuilder::new_fungible()
+                .divisibility(DIVISIBILITY_NONE)
                 .metadata("name", "VaccinePassport Admin Badge")
-                .initial_supply_fungible(1);
+                .initial_supply(1);
 
             // Define the VaccinePassport NFT.
             // Specify that the admin_badge can mint, burn and update the metadata of the tokens
-            let passport: ResourceDef = ResourceBuilder::new_non_fungible()
+            let passport: ResourceAddress = ResourceBuilder::new_non_fungible()
                             .metadata("name", "Vaccine Passport")
-                            .flags(MINTABLE | BURNABLE | INDIVIDUAL_METADATA_MUTABLE | RECALLABLE)
-                            .badge(
-                                passport_manager_badge.resource_def(),
-                                MAY_MINT | MAY_BURN | MAY_CHANGE_INDIVIDUAL_METADATA | MAY_RECALL
-                            )
+                            .mintable(rule!(require(passport_manager_badge.resource_address())), LOCKED)
+                            .burnable(rule!(require(passport_manager_badge.resource_address())), LOCKED)
+                            .updateable_non_fungible_data(rule!(require(passport_manager_badge.resource_address())), LOCKED)
                             .no_initial_supply();
 
             let component = Self {
-                admin_def: admin_badge.resource_def(),
+                admin_def: admin_badge.resource_address(),
                 passport_manager_badge: Vault::with_bucket(passport_manager_badge),
                 passport_def: passport,
                 nb_passports: 0
             }.instantiate();
 
-            (component, admin_badge)
-        }
-
-        #[auth(admin_def)]
-        pub fn cancel_badge(&self, id: u128) {
-            // todo: We can't recall badges yet but this could be a cool feature for this example.
+            (component.globalize(), admin_badge)
         }
 
         // Allow people to create a new empty vaccine passport
         pub fn get_new_passport(&mut self) -> Bucket {
             // Mint a new NFT with empty array of vaccines
-            let passport = self.passport_manager_badge.authorize(|badge| {
-                self.passport_def.mint_nft(self.nb_passports, Passport{vaccines: Vec::new()}, badge)
+            let passport = self.passport_manager_badge.authorize(|| {
+                borrow_resource_manager!(self.passport_def)
+                    .mint_non_fungible(&NonFungibleId::from_u64(self.nb_passports), Passport{vaccines: Vec::new()})
             });
             
             self.nb_passports += 1;
@@ -75,34 +71,31 @@ blueprint! {
         }
 
         // Update the provided passport NFT with the vaccine data
-        pub fn get_vaccine(&self, passport: Bucket) -> Bucket {
+        pub fn get_vaccine(&self, passport: Proof) {
             // Make sure the passed bucket is valid
-            assert!(passport.amount() > Decimal::zero(), "Missing passport");
-            assert!(passport.resource_def() == self.passport_def, "Wrong passport. Create one with `get_new_passport`");
+            assert!(passport.resource_address() == self.passport_def, "Wrong passport. Create one with `get_new_passport`");
 
             // Add the vaccine data to the passport
-            let mut data: Passport = passport.get_nft_data(passport.get_nft_id());
+            let mut data: Passport = passport.non_fungible::<Passport>().data();
+
             data.vaccines.push(Vaccine{
                 name: "ScryptoZeneca".to_owned(),
-                epoch_taken: Context::current_epoch()
+                epoch_taken: Runtime::current_epoch()
             });
 
             // Update the NFT data with the new array of vaccines
-            self.passport_manager_badge.authorize(|badge| {
-                passport.update_nft_data(passport.get_nft_id(), data, badge);
+            self.passport_manager_badge.authorize(|| {
+                borrow_resource_manager!(self.passport_def)
+                    .update_non_fungible_data(&passport.non_fungible::<Passport>().id(), data)
             });
-
-            // Return the passport back to the caller
-            passport
         }
 
         // Display the information on the taken vaccines
-        pub fn display_vaccine_data(&self, passport: BucketRef) {
+        pub fn display_vaccine_data(&self, passport: Proof) {
             // Make sure the passed bucket is valid
-            assert!(passport.amount() > Decimal::zero(), "Missing passport");
-            assert!(passport.resource_def() == self.passport_def, "Wrong passport. Create one with `get_new_passport`");
+            assert!(passport.resource_address() == self.passport_def, "Wrong passport. Create one with `get_new_passport`");
 
-            let data: Passport = self.passport_def.get_nft_data(passport.get_nft_id());
+            let data: Passport = passport.non_fungible::<Passport>().data();
             passport.drop();
 
             info!("Vaccines you have taken:");

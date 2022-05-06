@@ -1,0 +1,17 @@
+# Get the participant badge from the account 1
+CALL_METHOD ComponentAddress("02dbbcc440e1f4b402675af83b2f39220cfa2ea77a4ad890cd8252") "withdraw" ResourceAddress("0380e15ef63c2a7ce48ff6b7bb02be2c22d686ebe9c2be65f5258c");
+
+# Take the organizer badge and make it available in the auth zone
+TAKE_FROM_WORKTOP ResourceAddress("0380e15ef63c2a7ce48ff6b7bb02be2c22d686ebe9c2be65f5258c") Bucket("participant_badge_bucket");
+CREATE_PROOF_FROM_BUCKET Bucket("participant_badge_bucket") Proof("participant_badge");
+
+# Get the flower token from account 1
+CALL_METHOD ComponentAddress("02dbbcc440e1f4b402675af83b2f39220cfa2ea77a4ad890cd8252") "withdraw" ResourceAddress("036382816227aa71f28a49c37e623aae393d44006064428366ef95");
+
+# Create a bucket with the flower token
+TAKE_FROM_WORKTOP ResourceAddress("036382816227aa71f28a49c37e623aae393d44006064428366ef95") Bucket("flower");
+
+# Call the "send_gift" method
+CALL_METHOD ComponentAddress("02c4e370f1f8f4a96cda0962acce820d8a22d3bf5b4e8c8e3bb344") "send_gift" Bucket("flower") Proof("participant_badge");
+
+CALL_METHOD_WITH_ALL_RESOURCES ComponentAddress("02dbbcc440e1f4b402675af83b2f39220cfa2ea77a4ad890cd8252") "deposit_batch";

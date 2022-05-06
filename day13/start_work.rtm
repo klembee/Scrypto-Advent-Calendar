@@ -1,0 +1,8 @@
+# Create a proof of the elf badge
+CALL_METHOD ComponentAddress("020d3869346218a5e8deaaf2001216dc00fcacb79fb43e30ded79a") "create_proof" ResourceAddress("03b4d0a4d5197620cd9a16debbef12abd894da9f99e33737b3bcb8");
+
+# Call the start_work method
+CALL_METHOD ComponentAddress("02e24299510dd44cae037d8a0468bba77de0654cbb8a74a3e2aece") "start_work";
+
+# Store the timesheet badge back into the account
+CALL_METHOD_WITH_ALL_RESOURCES ComponentAddress("020d3869346218a5e8deaaf2001216dc00fcacb79fb43e30ded79a") "deposit_batch";

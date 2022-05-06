@@ -12,12 +12,13 @@ blueprint! {
     }
 
     impl PresentFactory {
-        pub fn new() -> Component {
+        pub fn new() -> ComponentAddress {
             Self {
                 // Initiate the HashMap as empty
                 presents: HashMap::new()
             }
             .instantiate()
+            .globalize()
         }
 
         /*
@@ -27,9 +28,10 @@ blueprint! {
             assert!(!self.presents.contains_key(&name), "Present already exist !");
 
             // Create the present token
-            let bucket = ResourceBuilder::new_fungible(DIVISIBILITY_NONE)
+            let bucket = ResourceBuilder::new_fungible()
+                .divisibility(DIVISIBILITY_NONE)
                 .metadata("name", &name)
-                .initial_supply_fungible(quantity);
+                .initial_supply(quantity);
 
             // Store inside the present list
             self.presents.insert(name, Vault::with_bucket(bucket));

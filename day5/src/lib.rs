@@ -10,7 +10,7 @@ blueprint! {
     }
 
     impl PresentDeliverySchedule {
-        pub fn new() -> Component {
+        pub fn new() -> ComponentAddress {
             // Configure the places Santa must go to
             let mut places = HashMap::new();
             // Example: Santa must reach Africa before or on epoch 2
@@ -27,7 +27,7 @@ blueprint! {
                 places: places,
                 places_done: Vec::new()
             }
-            .instantiate()
+            .instantiate().globalize()
         }
 
         /*
@@ -40,13 +40,13 @@ blueprint! {
             for (continent, epoch_limit) in self.places.iter(){
                 if !self.places_done.contains(continent) {
                     places_to_go.push(continent.clone());
-                    if Context::current_epoch() > *epoch_limit {
+                    if Runtime::current_epoch() > *epoch_limit {
                         late_places.push(continent.clone());
                     }
                 }
             }
 
-            info!("Current epoch: {}", Context::current_epoch());
+            info!("Current epoch: {}", Runtime::current_epoch());
 
             if late_places.len() > 0 {
                 info!("Uwu! You are not on schedule !")

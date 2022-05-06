@@ -1,90 +1,83 @@
 use sbor::*;
 use scrypto::prelude::*;
 
-// Import the price oracle blueprint
-// Change the "change_me" text with the price oracle package address.
-// Example:
-// {
-//   "package": "013fa22e238526e9c82376d2b4679a845364243bf970e5f783d13f"
-//   "name": "PriceOracle"
-//   ...
 import! {
 r#"
+{
+  "package_address": "01232a1e751e830c96908eafaf2607b3b20295e2c483aba40235de",
+  "blueprint_name": "PriceOracle",
+  "functions": [
     {
-      "package": "01e2df51eb999d85f29fd3d92bc4be9fec7119f3408ebbd7db91ae",
-      "name": "PriceOracle",
-      "functions": [
+      "name": "new",
+      "inputs": [],
+      "output": {
+        "type": "Custom",
+        "name": "ComponentAddress",
+        "generics": []
+      }
+    }
+  ],
+  "methods": [
+    {
+      "name": "get_price",
+      "mutability": "Immutable",
+      "inputs": [
         {
-          "name": "new",
-          "inputs": [],
-          "output": {
-            "type": "Custom",
-            "name": "scrypto::core::Component",
-            "generics": []
-          }
+          "type": "Custom",
+          "name": "ResourceAddress",
+          "generics": []
+        },
+        {
+          "type": "Custom",
+          "name": "ResourceAddress",
+          "generics": []
         }
       ],
-      "methods": [
-        {
-          "name": "get_price",
-          "mutability": "Immutable",
-          "inputs": [
-            {
-              "type": "Custom",
-              "name": "scrypto::types::Address",
-              "generics": []
-            },
-            {
-              "type": "Custom",
-              "name": "scrypto::types::Address",
-              "generics": []
-            }
-          ],
-          "output": {
-            "type": "Option",
-            "value": {
-              "type": "Custom",
-              "name": "scrypto::types::Decimal",
-              "generics": []
-            }
-          }
-        },
-        {
-          "name": "get_usd_address",
-          "mutability": "Immutable",
-          "inputs": [],
-          "output": {
-            "type": "Custom",
-            "name": "scrypto::types::Address",
-            "generics": []
-          }
-        },
-        {
-          "name": "update_price",
-          "mutability": "Immutable",
-          "inputs": [
-            {
-              "type": "Custom",
-              "name": "scrypto::types::Address",
-              "generics": []
-            },
-            {
-              "type": "Custom",
-              "name": "scrypto::types::Address",
-              "generics": []
-            },
-            {
-              "type": "Custom",
-              "name": "scrypto::types::Decimal",
-              "generics": []
-            }
-          ],
-          "output": {
-            "type": "Unit"
-          }
+      "output": {
+        "type": "Option",
+        "value": {
+          "type": "Custom",
+          "name": "Decimal",
+          "generics": []
         }
-      ]
+      }
+    },
+    {
+      "name": "get_usd_address",
+      "mutability": "Immutable",
+      "inputs": [],
+      "output": {
+        "type": "Custom",
+        "name": "ResourceAddress",
+        "generics": []
+      }
+    },
+    {
+      "name": "update_price",
+      "mutability": "Immutable",
+      "inputs": [
+        {
+          "type": "Custom",
+          "name": "ResourceAddress",
+          "generics": []
+        },
+        {
+          "type": "Custom",
+          "name": "ResourceAddress",
+          "generics": []
+        },
+        {
+          "type": "Custom",
+          "name": "Decimal",
+          "generics": []
+        }
+      ],
+      "output": {
+        "type": "Unit"
+      }
     }
+  ]
+}
     "#
 }
 
@@ -94,7 +87,7 @@ struct PercentageData {
   nb_admin_approved: u32,
 }
 
-#[derive(NftData)]
+#[derive(NonFungibleData)]
 struct RecipientData {
   amount: Decimal,
   #[scrypto(mutable)]
@@ -105,92 +98,95 @@ blueprint! {
   struct PriceBasedUnlockScheduler {
     // Used to have a reference to the price oracle
     // to get the price of the token
-    price_oracle: PriceOracle,
+    price_oracle_address: ComponentAddress,
     // Keep track of the different unlock steps
     token_percentage_unlocked: HashMap<Decimal, PercentageData>,
     // Badge definition used to protect methods on the component
-    admin_def: ResourceDef,
+    admin_def: ResourceAddress,
     // Vault to store the tokens
     tokens: Vault,
     // Maps recipient badges to the amount left to withdraw
-    recipients: HashMap<Address, Decimal>,
+    recipients: HashMap<ResourceAddress, Decimal>,
     minter_badge: Vault,
-    recipient_def: ResourceDef,
-    nb_recipients: u128,
+    recipient_def: ResourceAddress,
     percentage_unlocked: Decimal
   }
 
   impl PriceBasedUnlockScheduler {
-    pub fn new(token_def: Address, price_oracle_address: Address) -> (Component, Bucket) {
+    pub fn new(token_def: ResourceAddress, price_oracle_address: ComponentAddress) -> (ComponentAddress, Bucket) {
       // Create an admin badge used for
       // authorization to call methods on the component
-      let admin_badge = ResourceBuilder::new_fungible(DIVISIBILITY_NONE)
+      let admin_badge = ResourceBuilder::new_fungible()
+                          .divisibility(DIVISIBILITY_NONE)
                           .metadata("name", "Unlock Scheduler")
-                          .initial_supply_fungible(1);
+                          .initial_supply(1);
 
       // Define a minter badge, used to mint recipient NFTs
       // and update their individual metadata
-      let minter_badge = ResourceBuilder::new_fungible(DIVISIBILITY_NONE)
+      let minter_badge = ResourceBuilder::new_fungible()
+                          .divisibility(DIVISIBILITY_NONE)
                           .metadata("name", "Unlock Scheduler")
-                          .initial_supply_fungible(1);
+                          .initial_supply(1);
 
       // Define the recipient NFT, used to keep track
       // of how many tokens a user have left to unlock
       let recipient_def = ResourceBuilder::new_non_fungible()
                             .metadata("name", "Recipient Data")
-                            .flags(MINTABLE | INDIVIDUAL_METADATA_MUTABLE)
-                            .badge(minter_badge.resource_def(), MAY_MINT | MAY_CHANGE_INDIVIDUAL_METADATA)
+                            .mintable(rule!(require(minter_badge.resource_address())), LOCKED)
+                            .updateable_non_fungible_data(rule!(require(minter_badge.resource_address())), LOCKED)
                             .no_initial_supply();
 
       // Define the different unlocking steps
       let mut token_percentage_unlocked = HashMap::new();
-      token_percentage_unlocked.insert(10.into(), PercentageData { percentage: 10.into(), nb_admin_approved: 0 }); // At 10$, unlock 10% of the supply
-      token_percentage_unlocked.insert(20.into(), PercentageData { percentage: 30.into(), nb_admin_approved: 0 }); // At 20$, unlock 30% of the supply
-      token_percentage_unlocked.insert(50.into(), PercentageData { percentage: 60.into(), nb_admin_approved: 0 }); // At 50$, unlock 60% of the supply
-      token_percentage_unlocked.insert(60.into(), PercentageData { percentage: 100.into(), nb_admin_approved: 0 }); // At 60$, unlock 100% of the supply
+      token_percentage_unlocked.insert(dec!("10"), PercentageData { percentage: dec!("10"), nb_admin_approved: 0 }); // At 10$, unlock 10% of the supply
+      token_percentage_unlocked.insert(dec!("20"), PercentageData { percentage: dec!("30"), nb_admin_approved: 0 }); // At 20$, unlock 30% of the supply
+      token_percentage_unlocked.insert(dec!("50"), PercentageData { percentage: dec!("60"), nb_admin_approved: 0 }); // At 50$, unlock 60% of the supply
+      token_percentage_unlocked.insert(dec!("60"), PercentageData { percentage: dec!("100"), nb_admin_approved: 0 }); // At 60$, unlock 100% of the supply
 
       // Store all required information on the component's state
       let component = Self {
-        price_oracle: price_oracle_address.into(),
+        price_oracle_address: price_oracle_address,
         token_percentage_unlocked: token_percentage_unlocked,
-        admin_def: admin_badge.resource_def(),
+        admin_def: admin_badge.resource_address(),
         tokens: Vault::new(token_def),
         recipients: HashMap::new(),
         minter_badge: Vault::with_bucket(minter_badge),
         recipient_def: recipient_def,
-        nb_recipients: 0,
         percentage_unlocked: Decimal::zero()
       }.instantiate();
 
+      let access_rules = AccessRules::new()
+        .method("add_recipient", rule!(require(admin_badge.resource_address())))
+        .method("do_unlock", rule!(require(admin_badge.resource_address())))
+        .default(rule!(allow_all));
+
       // Return the component and admin badge to the caller
-      (component, admin_badge)
+      (component.add_access_check(access_rules).globalize(), admin_badge)
     }
 
-    #[auth(admin_def)]
-    pub fn add_recipient(&mut self, recipient: Address, tokens: Bucket) {
+    pub fn add_recipient(&mut self, recipient: ComponentAddress, tokens: Bucket) {
       // Mint a new NFT for the recipient
-      let recipient_nft = self.minter_badge.authorize(|badge| {
+      let recipient_nft = self.minter_badge.authorize(|| {
         // Keep track of how much that account owns by
         // inserting it in the NFT metadata
-        self.recipient_def.mint_nft(self.nb_recipients, RecipientData {amount: tokens.amount(), percentage_unlocked: Decimal::zero()}, badge)
+        borrow_resource_manager!(self.recipient_def)
+          .mint_non_fungible(&NonFungibleId::random(), RecipientData {amount: tokens.amount(), percentage_unlocked: Decimal::zero()})
       });
 
       // Store the user's token in the component's vault
       self.tokens.put(tokens);
 
-      self.nb_recipients += 1;
-
       // Send the NFT to the account
-      Account::from(recipient).deposit(recipient_nft);
+      borrow_component!(recipient).call::<()>("deposit", vec![scrypto_encode(&recipient_nft)]);
     }
 
-    #[auth(admin_def)]
     pub fn do_unlock(&mut self) {
       // Get the current price of the asset
-      let current_price = match self.price_oracle.get_price(self.tokens.resource_address(), self.price_oracle.get_usd_address()) {
+      let price_oracle: PriceOracle = self.price_oracle_address.into();
+      let current_price = match price_oracle.get_price(self.tokens.resource_address(), price_oracle.get_usd_address()) {
         Some(price) => price,
         None => {
-          info!("No price found for {}", self.tokens.resource_def().metadata().get("name").unwrap());
+          info!("No price found for {}", borrow_resource_manager!(self.tokens.resource_address()).metadata().get("name").unwrap());
           std::process::abort();
         }
       };
@@ -207,13 +203,12 @@ blueprint! {
 
     // Allow a recipient to withdraw the unlocked
     // tokens that have not been withdrawn yet.
-    pub fn withdraw(&mut self, recipient_nft: BucketRef) -> Bucket {
-      let nft_id = recipient_nft.get_nft_id();
-      assert!(recipient_nft.amount() > Decimal::zero(), "Need to provide a badge");
-      assert!(recipient_nft.resource_def() == self.recipient_def, "Wrong token");
+    pub fn withdraw(&mut self, recipient_nft: Proof) -> Bucket {
+      let nft = recipient_nft.non_fungible::<RecipientData>();
+      assert!(recipient_nft.resource_address() == self.recipient_def, "Wrong token");
 
       // Fetch the metadata of the NFT
-      let mut nft_data: RecipientData = self.recipient_def.get_nft_data(recipient_nft.get_nft_id());
+      let mut nft_data: RecipientData = nft.data();
       let amount = nft_data.amount;
       recipient_nft.drop();
 
@@ -225,11 +220,11 @@ blueprint! {
       nft_data.percentage_unlocked = self.percentage_unlocked;
 
       // Insert the new metadata on the NFT
-      self.minter_badge.authorize(|badge| {
-        self.recipient_def.update_nft_data(nft_id, nft_data, badge);
+      self.minter_badge.authorize(|| {
+        borrow_resource_manager!(self.recipient_def).update_non_fungible_data(&nft.id(), nft_data);
       });
 
-      self.tokens.take(amount * (to_unlock / 100))
+      self.tokens.take(amount * (to_unlock / dec!("100")))
     }
   }
 }
